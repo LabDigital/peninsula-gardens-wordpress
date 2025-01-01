@@ -1,0 +1,67 @@
+name: peninsulagarde  # do not change this name, required to pull data down
+recipe: wordpress
+env_file:
+  - defaults.env
+config:
+  php: '7.4'
+  via: nginx
+  database: mysql:5.7
+  webroot: . # where my site files live
+  xdebug: true
+services:
+  appserver:
+    build_as_root:
+      - curl -sL https://deb.nodesource.com/setup_current.x | bash -
+      - apt-get install -y nodejs
+  phpmyadmin: # add PMA for easy database administration
+    type: phpmyadmin:5.0
+    hosts: [database]
+  mailhog: # keep those pesky emails from leaving your sandbox
+    type: mailhog:v1.0.0
+    hogfrom: [appserver]
+tooling:
+  wp-install: # create a command to automate the 1-click install
+    description: set up site
+    cmd:
+      - wp config create --dbname=wordpress --dbuser=wordpress --dbpass=wordpress --dbhost=database
+      - wp core install  --url=peninsulagarde.lndo.site --title=peninsulagarde --admin_user=admin --admin_password=password --admin_email=php@lab.co.uk
+  pull-db:
+    service: appserver
+    description: Pull database from dev server
+    # dir: /app
+    # cmd: /app/pull
+    cmd:
+      # Welcome message / sanity check
+      - appserver: echo "Running Pull Database for site peninsulagarde.wpengine.com"
+      # Create db dump named 'mysql.sql'
+      - appserver: echo "Dumping database on dev"
+      - appserver: ssh -i $WP_SSHKEY peninsulagarde@peninsulagarde.ssh.wpengine.net "cd sites/peninsulagarde && wp db export mysql.sql"
+      # Copy db dump to local
+      - appserver: echo "Copying to local"
+      - appserver: scp -i $WP_SSHKEY peninsulagarde@peninsulagarde.ssh.wpengine.net:~/sites/peninsulagarde/mysql.sql .
+      # Delete db dump from prod server
+      - appserver: echo "Cleaning up dev"
+      - appserver: ssh -i $WP_SSHKEY peninsulagarde@peninsulagarde.ssh.wpengine.net "cd sites/peninsulagarde && rm mysql.sql"
+      # Import db dump locally
+      - appserver: echo "Importing on local"
+      - appserver: wp db import mysql.sql
+      # Search & Replace the site url
+      - appserver: echo "Fixing site url"
+      - appserver: wp search-replace "peninsulagarde.wpengine.com" "peninsulagarde.lndo.site"
+      # Clean Up
+      - appserver: echo "Cleaning up local"
+      - appserver: rm mysql.sql
+  pull-files:
+    service: appserver
+    description: Pull uploads from dev server
+    cmd:
+      # Welcome message / sanity check
+      - appserver: echo "Running Pull Uploads for site peninsulagarde.wpengine.com"
+      # Get the uploads (excluding log files)
+      - appserver: echo "Fetching uploads"
+      - appserver: rsync -e "ssh -i $WP_SSHKEY" -av --exclude '*.log' peninsulagarde@peninsulagarde.ssh.wpengine.net:~/sites/peninsulagarde/wp-content/uploads/ wp-content/uploads
+excludes:
+ - wp-content/uploads
+ - wp-content/wflogs
+ - wp-content/wp-rocket-config
+ - wp-content/cache

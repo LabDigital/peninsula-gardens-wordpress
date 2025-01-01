@@ -1,0 +1,15 @@
+name: Deploy Development to WP Engine (nidov2dev.wpengine.com)
+on:
+  push:
+    branches:
+     - development
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: GitHub Action Deploy to WP Engine
+      uses: wpengine/github-action-wpe-site-deploy@v3.0
+      with:
+        WPE_SSHG_KEY_PRIVATE: ${{ secrets.WPE_SSHG_KEY_PRIVATE }}
+        WPE_ENV: peninsulag2dev
