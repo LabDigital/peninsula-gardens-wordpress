@@ -1,20 +1,21 @@
-=== WP Rollback ===
+=== WP Rollback - Rollback Plugins and Themes ===
 Contributors: dlocc, drrobotnik, webdevmattcrom, givewp
 Tags: rollback, revert, downgrade, version, plugins, themes, version, versions, backup, backups, revision, revisions
-Requires at least: 4.8
+Requires at least: 6.0
 Donate Link: https://givewp.com/
-Tested up to: 6.2
-Stable tag: 1.7.3
+Tested up to: 6.7
+Requires PHP: 7.4
+Stable tag: 2.0.7
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-Rollback (or forward) any WordPress.org plugin or theme like a boss.
+Rollback (or forward) any WordPress.org plugin, theme, or block like a boss.
 
 == Description ==
 
 Quickly and easily rollback any theme or plugin from WordPress.org to any previous (or newer) version without any of the manual fuss. Works just like the plugin updater, except you're rolling back (or forward) to a specific version. No need for manually downloading and FTPing the files or learning Subversion. This plugin takes care of the trouble for you.
 
-= Rollback WordPress.org Plugins and Themes =
+= 🔙 Rollback WordPress.org Plugins and Themes =
 
 While it's considered best practice to always keep your WordPress plugins and themes updated, we understand there are times you may need to quickly revert to a previous version. This plugin makes that process as easy as a few mouse clicks. Simply select the version of the plugin or theme that you'd like to rollback to, confirm, and in a few moments you'll be using the version requested. No more fumbling to find the version, downloading, unzipping, FTPing, learning Subversion or hair pulling.
 
@@ -36,14 +37,14 @@ WP Rollback was created to be as intuitive to the natural WordPress experience a
 
 **BUT!!**
 
-We do have documentation on the plugin [Github Wiki](https://github.com/impress-org/wp-rollback/wiki).
+We do have documentation on the plugin [GitHub Wiki](https://github.com/impress-org/wp-rollback/wiki).
 
 == Installation ==
 
 = Minimum Requirements =
 
-* WordPress 4.8 or greater
-* PHP version 5.3 or greater
+* WordPress 5.5 or greater
+* PHP version 7.4 or greater
 * MySQL version 5.0 or greater
 
 = Automatic installation =
@@ -83,29 +84,56 @@ The documentation for this plugin is located on our [Github Wiki](https://github
 
 = Can this plugin be translated? =
 
-Yes! All strings are internationalized and ready to be translated. Simply use the languages/wp-rollback.pot file and your favorite translation tool. Once finished, please reach out to us on the WordPress.org forums or better yet, submit a pull request on the [Github Repo](https://github.com/impress-org/wp-rollback/).
+Yes! All strings are internationalized and ready to be translated. Simply use the languages/wp-rollback.pot file and your favorite translation tool. Once finished, please reach out to us on the WordPress.org forums or better yet, submit a pull request on the [GitHub Repo](https://github.com/impress-org/wp-rollback/).
 
 == Screenshots ==
 
-1. The Rollback link on the Plugins page.
+1. Click the Rollback link on the Plugins page to begin a plugin rollback.
 
-2. The Rollback Versions page for a plugin.
+2. Select the version you would like to switch to on the version selection page.
 
-3. The Update plugin screen.
+3. Confirm you would like to proceed with the rollback.
 
-4. The Rollback button on the Theme Modal popup.
+4. The plugin will update to the selected version.
 
-5. The Rollback Versions page for a theme.
+5. Click the Rollback button on the Theme details screen to begin a theme rollback.
 
-6. The Rollback modal confirmation popup.
-
-7. The Update theme screen.
+5. The theme Rollback version selection page works exactly like the plugins page.
 
 == Upgrade Notice ==
 
 This is the first version of this plugin. It is a tool for your convenience. Rollback at your own risk!
 
 == Changelog ==
+
+= 2.0.7 =
+* Fix: Resolved a bug with plain permalink websites which caused a `rest_no_route` error when trying to rollback a plugin or theme. Thanks, @afizesan for helping pinpoint the issue.
+* Fix: Update the way the React app is loaded to suppress React 18+ warnings.
+* Tweak: Bumped the plugin's minimum required WordPress version to 6.0+ for best compatibility with new React components in UI.
+
+= 2.0.6 =
+Fix: The release corrects the paths used in plugin file includes and requires. The unnecessary forward slashes at the start of each file path have been removed. This change ensures proper file inclusion and requirement, avoiding potential issues with file not found errors.
+
+= 2.0.5 =
+* New: In this version we've brought back the "trunk" option to rollback to. This allows plugin or theme developers who use trunk for beta testing to rollback to the latest trunk version. Thanks, @megamenu for suggesting this be brought back.
+* Fix: Refactored how plugin avatar images are checked so that all available image types and sizes are checked. This resolves an issue where some plugins would not display an avatar image.
+* Fix: On the final rollback confirmation screen, the plugin name field was outputting raw HTML. This has been fixed to properly display the plugin name, even if it contains some html characters.
+
+= 2.0.4 =
+* Fix: Resolved issue REST route not including proper permission callback which created a PHP notice. Thanks, @rom1our for submitting the issue.
+* Fix: Resolve issue with REST API and multisite installs not being able to properly communicate with the endpoint.
+
+= 2.0.3 =
+* Fix: A few additional strings in JavaScript needed to be internationalized. Thanks, @pedro-mendonca for contributing the fix.
+
+= 2.0.2 =
+* Fix: Resolves an issue with WP Rollback not being able to communicate to its REST API on WordPress subdirectory installs. Thanks, @emaralive for reporting the issue. 
+
+= 2.0.1 =
+* Fix: Resolved an issue with the POT file not properly being generated at release. This resolves the issue with the new UI not being able to be translated.
+
+= 2.0.0 =
+* New: Introducing version 2.0! In this new version the UI is now better looking and snappier than ever. The branding has also been updated to look and feel more modern.
 
 = 1.7.3 =
 * Fix: Resolved an issue with plugin rollbacks not correctly setting a filepath for the plugin being rolled back. Props to WP.org user @itmesteren for the fix.
