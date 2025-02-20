@@ -2,9 +2,9 @@
 Contributors: yani.iliev, bangelov, pimjitsawang
 Tags: backup, transfer, copy, move, clone
 Requires at least: 3.3
-Tested up to: 6.6
+Tested up to: 6.7
 Requires PHP: 5.3
-Stable tag: 7.86
+Stable tag: 7.89
 License: GPLv2 or later
 
 Backup, transfer, copy, and move a site with 1-click. Quick, easy, and reliable.
@@ -24,7 +24,7 @@ Follow these three simple steps, and your site will be live at its new location 
 
 One feature that makes All-in-One WP Migration widely loved (to the tune of over 6,000 5-star user reviews) is that the technical requirements for installing the plugin are simple.
 
-If you have WordPress version between 3.3 and 6.6.1 and PHP version between 5.3 and 8.4, you are good to go. All-in-One WP Migration also supports all versions of MySQL, MariaDB and SQLite.
+If you have WordPress version between 3.3 and 6.7.1 and PHP version between 5.3 and 8.4, you are good to go. All-in-One WP Migration also supports all versions of MySQL, MariaDB and SQLite.
 
 **Features Spotlight:**
 
@@ -98,6 +98,28 @@ All-in-One WP Migration is in full compliance with General Data Protection Regul
 See our [GDPR Compliant Privacy Policy here](https://www.iubenda.com/privacy-policy/946881).
 
 == Changelog ==
+= 7.89 =
+**Improved**
+
+* Upgraded to Node.js 22 for better performance and security
+* Updated all plugin dependencies to keep things running smoothly and securely
+
+= 7.88 =
+**Fixed**
+
+* Fixed an issue where the upload progress was stuck at 100%
+* Fixed an issue where the upload could not be cancelled before it was completed
+
+**Improved**
+
+* Improved user-facing messages to be friendlier, direct, consistent, and more informative.
+
+= 7.87 =
+**Fixed**
+
+* Resolved a vulnerability where error logs were publicly accessible with a known name by appending random affixes to error log filenames, making them unguessable. Error logs are now automatically deleted daily and during plugin updates. Special thanks to villu164 for responsibly disclosing this issue.
+* Resolved a vulnerability where an administrator user could inject arbitrary PHP code through specific inputs. This vulnerability requires administrator-level access to exploit, ensuring that unauthorized users cannot perform this action. Special thanks to Ryan Kozak for responsibly disclosing this issue.
+
 = 7.86 =
 **Fixed**
 
