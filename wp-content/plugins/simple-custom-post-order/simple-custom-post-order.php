@@ -3,19 +3,19 @@
  * Plugin Name: Simple Custom Post Order
  * Plugin URI: https://wordpress.org/plugins-wp/simple-custom-post-order/
  * Description: Order Items (Posts, Pages, and Custom Post Types) using a Drag and Drop Sortable JavaScript.
- * Version: 2.5.6
+ * Version: 2.5.10
  * Author: Colorlib
  * Author URI: https://colorlib.com/
- * Tested up to: 5.6
- * Requires: 4.6 or higher
+ * Tested up to: 6.7
+ * Requires: 6.2 or higher
  * License: GPLv3 or later
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
- * Requires PHP: 5.6
+ * Requires PHP: 7.2.5
  * Text Domain: simple-custom-post-order
  * Domain Path: /languages
  *
  * Copyright 2013-2017 Sameer Humagain im@hsameer.com.np
- * Copyright 2017-2019 Colorlib support@colorlib.com
+ * Copyright 2017-2023 Colorlib support@colorlib.com
  *
  * SVN commit with ownership change: https://plugins.trac.wordpress.org/changeset/1590135/simple-custom-post-order
  *
@@ -36,7 +36,7 @@
 
 define( 'SCPORDER_URL', plugins_url( '', __FILE__ ) );
 define( 'SCPORDER_DIR', plugin_dir_path( __FILE__ ) );
-define( 'SCPORDER_VERSION', '2.5.6' );
+define( 'SCPORDER_VERSION', '2.5.8' );
 
 $scporder = new SCPO_Engine();
 
@@ -47,7 +47,7 @@ class SCPO_Engine {
 			$this->scporder_install();
 		}
 
-		$this->load_dependencies();
+		add_action( 'init', array( $this, 'load_dependencies' ) );
 
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 
@@ -80,7 +80,7 @@ class SCPO_Engine {
 		add_action( 'wp_ajax_scpo_reset_order', array( $this, 'scpo_ajax_reset_order' ) );
 	}
 
-	private function load_dependencies() {
+	public function load_dependencies() {
 		include SCPORDER_DIR . 'class-simple-review.php';
 	}
 
@@ -227,16 +227,22 @@ class SCPO_Engine {
 		return $active;
 	}
 
+	//TODO corrigé
 	public function load_script_css() {
 		if ( $this->_check_load_script_css() ) {
 			wp_enqueue_script( 'jquery' );
 			wp_enqueue_script( 'jquery-ui-sortable' );
 			wp_enqueue_script( 'scporderjs', SCPORDER_URL . '/assets/scporder.min.js', array( 'jquery' ), SCPORDER_VERSION, true );
+			wp_localize_script( 'scporderjs', 'scporder_vars', array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'scporder_nonce_action' ),
+			) );
 			add_action( 'admin_print_styles', array( $this, 'print_scpo_style' ) );
 
 		}
 	}
 
+	//TODO corrigé
 	public function refresh() {
 
 		if ( scporder_doing_ajax() ) {
@@ -250,13 +256,16 @@ class SCPO_Engine {
 		if ( ! empty( $objects ) ) {
 
 			foreach ( $objects as $object ) {
-				$result = $wpdb->get_results(
+				$query = $wpdb->prepare(
 					"
-                    SELECT count(*) as cnt, max(menu_order) as max, min(menu_order) as min
-                    FROM $wpdb->posts
-                    WHERE post_type = '" . $object . "' AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
-                "
+					SELECT COUNT(*) AS cnt, MAX(menu_order) AS max, MIN(menu_order) AS min
+					FROM $wpdb->posts
+					WHERE post_type = %s AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
+					",
+					$object
 				);
+				
+				$result = $wpdb->get_results($query); // à corriger
 
 				if ( $result[0]->cnt == 0 || $result[0]->cnt == $result[0]->max ) {
 					continue;
@@ -281,27 +290,32 @@ class SCPO_Engine {
 
 		if ( ! empty( $tags ) ) {
 			foreach ( $tags as $taxonomy ) {
-				$result = $wpdb->get_results(
+				$query = $wpdb->prepare(
 					"
-                    SELECT count(*) as cnt, max(term_order) as max, min(term_order) as min
-                    FROM $wpdb->terms AS terms
-                    INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
-                    WHERE term_taxonomy.taxonomy = '" . $taxonomy . "'
-                "
+					SELECT COUNT(*) AS cnt, MAX(term_order) AS max, MIN(term_order) AS min
+					FROM $wpdb->terms AS terms
+					INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
+					WHERE term_taxonomy.taxonomy = %s
+					",
+					$taxonomy
 				);
+				$result = $wpdb->get_results($query); //Passage en requette préparée
 				if ( $result[0]->cnt == 0 || $result[0]->cnt == $result[0]->max ) {
 					continue;
 				}
 
-				$results = $wpdb->get_results(
+				$query = $wpdb->prepare(
 					"
-                    SELECT terms.term_id
-                    FROM $wpdb->terms AS terms
-                    INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
-                    WHERE term_taxonomy.taxonomy = '" . $taxonomy . "'
-                    ORDER BY term_order ASC
-                "
+					SELECT terms.term_id
+					FROM $wpdb->terms AS terms
+					INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
+					WHERE term_taxonomy.taxonomy = %s
+					ORDER BY term_order ASC
+					",
+					$taxonomy
 				);
+				
+				$results = $wpdb->get_results($query); //Passage en requette préparée
 				foreach ( $results as $key => $result ) {
 					$wpdb->update( $wpdb->terms, array( 'term_order' => $key + 1 ), array( 'term_id' => $result->term_id ) );
 				}
@@ -309,8 +323,15 @@ class SCPO_Engine {
 		}
 	}
 
+	//TODO corrigé
 	public function update_menu_order() {
 		global $wpdb;
+
+		check_ajax_referer( 'scporder_nonce_action', 'nonce' );
+	
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
 
 		parse_str( $_POST['order'], $data );
 
@@ -327,7 +348,9 @@ class SCPO_Engine {
 
 		$menu_order_arr = array();
 		foreach ( $id_arr as $key => $id ) {
-			$results = $wpdb->get_results( "SELECT menu_order FROM $wpdb->posts WHERE ID = " . intval( $id ) );
+			$id = intval( $id ); // Nettoyage variable ID
+
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT menu_order FROM $wpdb->posts WHERE ID = %d", $id ) ); //Passage en requette préparée
 			foreach ( $results as $result ) {
 				$menu_order_arr[] = $result->menu_order;
 			}
@@ -337,16 +360,31 @@ class SCPO_Engine {
 
 		foreach ( $data as $key => $values ) {
 			foreach ( $values as $position => $id ) {
-				$wpdb->update( $wpdb->posts, array( 'menu_order' => $menu_order_arr[ $position ] ), array( 'ID' => intval( $id ) ) );
+				$id = intval( $id ); // Nettoyage variable ID
+				$wpdb->update(
+					$wpdb->posts,
+					array( 'menu_order' => $menu_order_arr[ $position ] ),
+					array( 'ID' => $id ),
+					array( '%d' ),
+					array( '%d' )
+				);//Passage en requette préparée
 			}
 		}
 
-		do_action( 'scp_update_menu_order' );
+		wp_cache_flush();
 
+		do_action( 'scp_update_menu_order' );
 	}
 
+	//TODO corrigé
 	public function update_menu_order_tags() {
 		global $wpdb;
+
+		check_ajax_referer( 'scporder_nonce_action', 'nonce' );
+	
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
 
 		parse_str( $_POST['order'], $data );
 
@@ -363,7 +401,8 @@ class SCPO_Engine {
 
 		$menu_order_arr = array();
 		foreach ( $id_arr as $key => $id ) {
-			$results = $wpdb->get_results( "SELECT term_order FROM $wpdb->terms WHERE term_id = " . intval( $id ) );
+			$id = intval( $id ); // Nettoyage variable ID
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT term_order FROM $wpdb->terms WHERE term_id = %d", $id ) ); // Passage en requette préparée
 			foreach ( $results as $result ) {
 				$menu_order_arr[] = $result->term_order;
 			}
@@ -372,13 +411,25 @@ class SCPO_Engine {
 
 		foreach ( $data as $key => $values ) {
 			foreach ( $values as $position => $id ) {
-				$wpdb->update( $wpdb->terms, array( 'term_order' => $menu_order_arr[ $position ] ), array( 'term_id' => intval( $id ) ) );
+				$id = intval( $id ); // Nettoyage variable ID
+				$wpdb->update(
+					$wpdb->terms,
+					array( 'term_order' => $menu_order_arr[ $position ] ),
+					array( 'term_id' => $id ),
+					array( '%d' ),
+					array( '%d' )
+				); // Passage en requette préparée
 			}
 		}
+
+		wp_cache_flush();
 
 		do_action( 'scp_update_menu_order_tags' );
 
 	}
+
+
+	//TODO corrigé
 
 	public function update_options() {
 		global $wpdb;
@@ -394,6 +445,7 @@ class SCPO_Engine {
 		$input_options['tags']               = isset( $_POST['tags'] ) ? $_POST['tags'] : '';
 		$input_options['show_advanced_view'] = isset( $_POST['show_advanced_view'] ) ? $_POST['show_advanced_view'] : '';
 
+
 		update_option( 'scporder_options', $input_options );
 
 		$objects = $this->get_scporder_options_objects();
@@ -401,36 +453,45 @@ class SCPO_Engine {
 
 		if ( ! empty( $objects ) ) {
 			foreach ( $objects as $object ) {
+
+				$object = sanitize_text_field( $object ); // Nettoyage de la variable
+
 				$result = $wpdb->get_results(
-					"
-                    SELECT count(*) as cnt, max(menu_order) as max, min(menu_order) as min
-                    FROM $wpdb->posts
-                    WHERE post_type = '" . $object . "' AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
-                "
-				);
+					$wpdb->prepare(
+						"SELECT count(*) as cnt, max(menu_order) as max, min(menu_order) as min
+						FROM $wpdb->posts
+						WHERE post_type = %s AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')",
+						$object
+					)
+				); // Passage en requette préparée
+
+
 				if ( $result[0]->cnt == 0 || $result[0]->cnt == $result[0]->max ) {
 					continue;
 				}
 
 				if ( $object == 'page' ) {
 					$results = $wpdb->get_results(
-						"
-                        SELECT ID
-                        FROM $wpdb->posts
-                        WHERE post_type = '" . $object . "' AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
-                        ORDER BY post_title ASC
-                    "
-					);
+						$wpdb->prepare(
+							"SELECT ID
+							FROM $wpdb->posts
+							WHERE post_type = %s AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
+							ORDER BY post_title ASC",
+							$object
+						)
+					);// Passage en requette préparée
 				} else {
 					$results = $wpdb->get_results(
-						"
-                        SELECT ID
-                        FROM $wpdb->posts
-                        WHERE post_type = '" . $object . "' AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
-                        ORDER BY post_date DESC
-                    "
-					);
+						$wpdb->prepare(
+							"SELECT ID
+							FROM $wpdb->posts
+							WHERE post_type = %s AND post_status IN ('publish', 'pending', 'draft', 'private', 'future')
+							ORDER BY post_date DESC",
+							$object
+						)
+					);// Passage en requette préparée
 				}
+
 				foreach ( $results as $key => $result ) {
 					$wpdb->update( $wpdb->posts, array( 'menu_order' => $key + 1 ), array( 'ID' => $result->ID ) );
 				}
@@ -439,34 +500,40 @@ class SCPO_Engine {
 
 		if ( ! empty( $tags ) ) {
 			foreach ( $tags as $taxonomy ) {
+				$taxonomy = sanitize_text_field( $taxonomy ); // Sanitize the taxonomy value
+
 				$result = $wpdb->get_results(
-					"
-                    SELECT count(*) as cnt, max(term_order) as max, min(term_order) as min
-                    FROM $wpdb->terms AS terms
-                    INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
-                    WHERE term_taxonomy.taxonomy = '" . $taxonomy . "'
-                "
-				);
+					$wpdb->prepare(
+						"SELECT count(*) as cnt, max(term_order) as max, min(term_order) as min FROM $wpdb->terms AS terms
+						INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
+						WHERE term_taxonomy.taxonomy = %s",
+						$taxonomy
+					)
+				);// Passage en requette préparée
+				
 				if ( $result[0]->cnt == 0 || $result[0]->cnt == $result[0]->max ) {
 					continue;
 				}
 
 				$results = $wpdb->get_results(
-					"
-                    SELECT terms.term_id
-                    FROM $wpdb->terms AS terms
-                    INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
-                    WHERE term_taxonomy.taxonomy = '" . $taxonomy . "'
-                    ORDER BY name ASC
-                "
-				);
+					$wpdb->prepare(
+						"SELECT terms.term_id
+						FROM $wpdb->terms AS terms
+						INNER JOIN $wpdb->term_taxonomy AS term_taxonomy ON ( terms.term_id = term_taxonomy.term_id )
+						WHERE term_taxonomy.taxonomy = %s
+						ORDER BY name ASC",
+						$taxonomy
+					)
+				);// Passage en requette préparée
+
 				foreach ( $results as $key => $result ) {
 					$wpdb->update( $wpdb->terms, array( 'term_order' => $key + 1 ), array( 'term_id' => $result->term_id ) );
 				}
 			}
 		}
 
-		wp_redirect( 'admin.php?page=scporder-settings&msg=update' );
+		wp_safe_redirect( 'admin.php?page=scporder-settings&msg=update' ); //safe redirect
+		exit();
 	}
 
 	public function scporder_previous_post_where( $where ) {
@@ -583,6 +650,7 @@ class SCPO_Engine {
 		}
 	}
 
+
 	public function scporder_get_terms_orderby( $orderby, $args ) {
 
 		if ( is_admin() && ! wp_doing_ajax() ) {
@@ -623,7 +691,7 @@ class SCPO_Engine {
 		foreach ( $terms as $key => $term ) {
 			if ( is_object( $term ) && isset( $term->taxonomy ) ) {
 				$taxonomy = $term->taxonomy;
-				if ( ! in_array( $taxonomy, $tags ) ) {
+				if ( ! in_array( $taxonomy, $tags , true) ) {
 					return $terms;
 				}
 			} else {
@@ -631,9 +699,12 @@ class SCPO_Engine {
 			}
 		}
 
-		usort( $terms, array( $this, 'taxcmp' ) );
+		if ( is_array( $terms ) ) {
+			usort( $terms, array( $this, 'taxcmp' ) );
+		}
 		return $terms;
 	}
+
 
 	public function taxcmp( $a, $b ) {
 		if ( $a->term_order == $b->term_order ) {
@@ -658,12 +729,14 @@ class SCPO_Engine {
 	/**
 	 *  SCPO reset order for post types/taxonomies
 	 */
+
+	 //TODO corrigé
 	public function scpo_ajax_reset_order() {
 
 		global $wpdb;
 		if ( 'scpo_reset_order' == $_POST['action'] ) {
 			check_ajax_referer( 'scpo-reset-order', 'scpo_security' );
-			$items = $_POST['items'];
+			$items = isset( $_POST['items'] ) ? $_POST['items'] : array(); // Nettoyage et verification de la variable
 
 			$count   = 0;
 			$in_list = '(';
@@ -672,12 +745,15 @@ class SCPO_Engine {
 				if ( $count != 0 ) {
 					$in_list .= ',';
 				}
-				$in_list .= '\'' . $item . '\'';
+				$in_list .= $wpdb->prepare( '%s', $item );
 				$count++;
 			}
 			$in_list .= ')';
 
-			$prep_posts_query = "UPDATE $wpdb->posts SET `menu_order` = 0 WHERE `post_type` IN $in_list";
+			$prep_posts_query = $wpdb->prepare(
+				"UPDATE $wpdb->posts SET `menu_order` = 0 WHERE `post_type` IN %s",
+				$in_list
+			); // Passage en requette préparée
 
 			$result = $wpdb->query( $prep_posts_query );
 
@@ -689,10 +765,10 @@ class SCPO_Engine {
 				update_option( 'scporder_options', $scpo_options );
 			}
 
-			if ( $result ) {
+			if ( $result !== false ) { //Passage en vérification strict
 				echo 'Items have been reset';
 			} else {
-				echo false;
+				echo 'false'; // echo mot false pour éviter tout type juggling
 			}
 
 			wp_die();
@@ -704,6 +780,8 @@ class SCPO_Engine {
 	 *
 	 * @since 2.5.4
 	 */
+
+
 	public function print_scpo_style() {
 		?>
 		<style>
@@ -725,6 +803,7 @@ class SCPO_Engine {
 
 }
 
+
 function scporder_doing_ajax() {
 
 	if ( function_exists( 'wp_doing_ajax' ) ) {
@@ -742,6 +821,8 @@ function scporder_doing_ajax() {
 /**
  * SCP Order Uninstall hook
  */
+
+ 
 register_uninstall_hook( __FILE__, 'scporder_uninstall' );
 
 function scporder_uninstall() {
@@ -758,6 +839,7 @@ function scporder_uninstall() {
 		scporder_uninstall_db();
 	}
 }
+
 
 function scporder_uninstall_db() {
 	global $wpdb;

@@ -35,19 +35,20 @@
             * Retrieve the plugin options
             * 
             */
-            function get_options()
+            static public function get_options()
                 {
                     //make sure the vars are set as default
                     $options = get_option('cpto_options');
                     
                     $defaults   = array (
-                                            'show_reorder_interfaces'   =>  array(),
-                                            'autosort'                  =>  1,
-                                            'adminsort'                 =>  1,
-                                            'use_query_ASC_DESC'        =>  '',
-                                            'archive_drag_drop'         =>  1,
-                                            'capability'                =>  'manage_options',
-                                            'navigation_sort_apply'     =>  1,
+                                            'show_reorder_interfaces'           =>  array(),
+                                            'allow_reorder_default_interfaces'  =>  array(),
+                                            'autosort'                          =>  1,
+                                            'adminsort'                         =>  1,
+                                            'use_query_ASC_DESC'                =>  '',
+                                            'capability'                        =>  'manage_options',
+                                            'edit_view_links'                   =>  '',
+                                            'navigation_sort_apply'             =>  1,
                                             
                                         );
                     $options          = wp_parse_args( $options, $defaults );
@@ -66,10 +67,10 @@
                 {
                     ?>
                         <div id="cpt_info_box">
-                                       <p><?php esc_html_e('Did you find this plugin useful? Please support our work by purchasing the advanced version or write an article about this plugin in your blog with a link to our site', 'post-types-order') ?> <a href="https://www.nsp-code.com/" target="_blank"><strong>https://www.nsp-code.com/</strong></a>.</p>
-                            <h4><?php esc_html_e('Did you know there is available an Advanced version of this plug-in?', 'post-types-order') ?> <a target="_blank" href="https://www.nsp-code.com/premium-plugins/wordpress-plugins/advanced-post-types-order/"><?php _e('Read more', 'post-types-order') ?></a></h4>
+                            <p><?php esc_html_e('Did you find this plugin useful? Please support our work by purchasing the advanced version or write an article about this plugin in your blog with a link to our site', 'post-types-order') ?> <a href="https://www.nsp-code.com/" target="_blank"><strong>https://www.nsp-code.com/</strong></a>.</p>
+                            <h4><a href="https://www.nsp-code.com/premium-plugins/advanced-post-types-order/" target="_blank"><img width="151" src="<?php echo CPTURL ?>/images/logo.png" class="attachment-large size-large wp-image-36927" alt=""></a> <?php esc_html_e('Did you know there is available an Advanced version of this plug-in?', 'post-types-order') ?> <a target="_blank" href="https://www.nsp-code.com/premium-plugins/advanced-post-types-order/"><?php _e('Read more', 'post-types-order') ?></a></h4>
                             <p><?php esc_html_e('Check our', 'post-types-order') ?> <a target="_blank" href="https://wordpress.org/plugins/taxonomy-terms-order/">Category Order - Taxonomy Terms Order</a> <?php esc_html_e('plugin which allow to custom sort categories and custom taxonomies terms', 'post-types-order') ?> </p>
-                            <p><span style="color:#CC0000" class="dashicons dashicons-megaphone" alt="f488">&nbsp;</span> <?php esc_html_e('Check out', 'post-types-order') ?> <a href="https://wordpress.org/plugins/wp-hide-security-enhancer/" target="_blank"><b>WP Hide & Security Enhancer</b></a> <?php esc_html_e('the easy way to completely hide your WordPress core files, theme and plugins', 'post-types-order') ?>.</p>
+                            <p><span style="color:#CC0000" class="dashicons dashicons-megaphone" alt="f488">&nbsp;</span> <?php esc_html_e('Check out', 'post-types-order') ?> <a href="https://wordpress.org/plugins/wp-hide-security-enhancer/" target="_blank"><b>WP Hide & Security Enhancer</b></a> <?php esc_html_e('an extra layer of security for your site. The easy way to completely hide your WordPress core files, themes and plugins', 'post-types-order') ?>.</p>
                             
                             <div class="clear"></div>
                         </div>
@@ -78,7 +79,13 @@
                 }
 
                 
-            
+            /**
+            * Gte previous post WHERE
+            * 
+            * @param mixed $where
+            * @param mixed $in_same_term
+            * @param mixed $excluded_terms
+            */
             function cpto_get_previous_post_where($where, $in_same_term, $excluded_terms)
                 {
                     global $post, $wpdb;
@@ -149,7 +156,13 @@
                     
                     return $where;
                 }
-                
+            
+            
+            /**
+            * Get the previous post sort
+            *     
+            * @param mixed $sort
+            */
             function cpto_get_previous_post_sort($sort)
                 {
                     global $post, $wpdb;
@@ -159,6 +172,14 @@
                     return $sort;
                 }
 
+                
+            /**
+            * Get the next post WHERE
+            * 
+            * @param mixed $where
+            * @param mixed $in_same_term
+            * @param mixed $excluded_terms
+            */
             function cpto_get_next_post_where($where, $in_same_term, $excluded_terms)
                 {
                     global $post, $wpdb;
@@ -230,6 +251,12 @@
                     return $where;
                 }
 
+            
+            /**
+            * Get next post sort
+            * 
+            * @param mixed $sort
+            */
             function cpto_get_next_post_sort($sort)
                 {
                     global $post, $wpdb; 
@@ -239,8 +266,136 @@
                     return $sort;    
                 }
 
+            
+            
+            /**
+            * Clear any cache plugins
+            *     
+            */
+            static public function site_cache_clear()
+                {
+                    wp_cache_flush();
+                    
+                    $cleared_cache  =   FALSE;
+                    
+                    if ( function_exists('wp_cache_clear_cache'))
+                        {
+                            wp_cache_clear_cache();
+                            $cleared_cache  =   TRUE;
+                        }
+                    
+                    if ( function_exists('w3tc_flush_all'))
+                        {
+                            w3tc_flush_all();
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if ( function_exists('opcache_reset')    &&  ! ini_get( 'opcache.restrict_api' ) )
+                        {
+                            @opcache_reset();
+                            $cleared_cache  =   TRUE;
+                        }
+                    
+                    if ( function_exists( 'rocket_clean_domain' ) )
+                        {
+                            rocket_clean_domain();
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if ( function_exists('wp_cache_clear_cache')) 
+                        {
+                            wp_cache_clear_cache();
+                            $cleared_cache  =   TRUE;
+                        }
                 
+                    global $wp_fastest_cache;
+                    if ( method_exists( 'WpFastestCache', 'deleteCache' ) && !empty( $wp_fastest_cache ) )
+                        {
+                            $wp_fastest_cache->deleteCache();
+                            $cleared_cache  =   TRUE;
+                        }
+                
+                    //If your host has installed APC cache this plugin allows you to clear the cache from within WordPress
+                    if ( function_exists('apc_clear_cache'))
+                        {
+                            apc_clear_cache();
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if ( function_exists('fvm_purge_all'))
+                        {
+                            fvm_purge_all();
+                            $cleared_cache  =   TRUE;
+                        }
+                    
+                    if ( class_exists( 'autoptimizeCache' ) )     
+                        {
+                            autoptimizeCache::clearall();
+                            $cleared_cache  =   TRUE;
+                        }
+
+                    //WPEngine
+                    if ( class_exists( 'WpeCommon' ) ) 
+                        {
+                            if ( method_exists( 'WpeCommon', 'purge_memcached' ) )
+                                WpeCommon::purge_memcached();
+                            if ( method_exists( 'WpeCommon', 'clear_maxcdn_cache' ) )
+                                WpeCommon::clear_maxcdn_cache();
+                            if ( method_exists( 'WpeCommon', 'purge_varnish_cache' ) )
+                                WpeCommon::purge_varnish_cache();
+                            
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if (class_exists('Cache_Enabler_Disk') && method_exists('Cache_Enabler_Disk', 'clear_cache'))
+                        {
+                            Cache_Enabler_Disk::clear_cache();
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    //Perfmatters
+                    if ( class_exists('Perfmatters\CSS') && method_exists('Perfmatters\CSS', 'clear_used_css') )
+                        {
+                            Perfmatters\CSS::clear_used_css();
+                            $cleared_cache  =   TRUE;
+                        }
+                    
+                    if ( defined( 'BREEZE_VERSION' ) )
+                        {
+                            do_action( 'breeze_clear_all_cache' );
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if ( function_exists('sg_cachepress_purge_everything'))
+                        {
+                            sg_cachepress_purge_everything();
+                            $cleared_cache  =   TRUE;
+                        }
+                    
+                    if ( defined ( 'FLYING_PRESS_VERSION' ) )
+                        {
+                            do_action('flying_press_purge_everything:before');
+
+                            @unlink(FLYING_PRESS_CACHE_DIR . '/preload.txt');
+
+                            // Delete all files and subdirectories
+                            FlyingPress\Purge::purge_everything();
+
+                            @mkdir(FLYING_PRESS_CACHE_DIR, 0755, true);
+
+                            do_action('flying_press_purge_everything:after');
+                            
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    if (class_exists('\LiteSpeed\Purge'))
+                        {
+                            \LiteSpeed\Purge::purge_all();
+                            $cleared_cache  =   TRUE;
+                        }
+                        
+                    return $cleared_cache;
+                        
+                }    
                 
         }
-
-?>
