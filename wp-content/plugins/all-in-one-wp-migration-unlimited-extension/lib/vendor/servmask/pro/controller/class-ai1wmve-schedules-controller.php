@@ -54,11 +54,14 @@ if ( ! class_exists( 'Ai1wmve_Schedules_Controller' ) ) {
 						}
 					}
 
+					$incremental_storages = apply_filters( 'ai1wmve_incremental_storages', array() );
+
 					Ai1wm_Template::render(
 						'schedules/create-edit',
 						array(
-							'event'  => $event,
-							'tables' => $mysql->get_tables(),
+							'event'                => $event,
+							'tables'               => $mysql->get_tables(),
+							'incremental_storages' => $incremental_storages,
 						),
 						AI1WMVE_TEMPLATES_PATH
 					);

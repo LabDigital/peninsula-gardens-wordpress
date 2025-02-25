@@ -69,7 +69,7 @@ if (! apply_filters('emr/upsell', current_user_can('install_plugins')))
 
     <div class='shortpixel-offer spai'>
       <div class='img-wrapper'>
-          <img width="40" height="40" src="<?php echo emr()->getPluginURL('img/spai-logo.svg') ?>" alt="ShortPixel">
+          <img width="40" height="40" src="<?php echo esc_url(emr()->getPluginURL('img/spai-logo.svg')) ?>" alt="ShortPixel">
       </div>
 			<h4 class="grey">
 		     <?php echo esc_html__("ShortPixel Adaptive Images", "enable-media-replace"); ?>
@@ -96,16 +96,27 @@ if (! apply_filters('emr/upsell', current_user_can('install_plugins')))
 
     </div>
 	<?php endif; ?>
-	<!--- // SHORTPIXEL -->
+	<!--- // SHORTPIXEL AI -->
+
+  <!--- Shortpixel THEME -->
+	<div class='shortpixel-offer theme-offer'>
+		<p><a href="https://wordpress.org/themes/superb-pixels/" target="_blank"><img src="<?php echo esc_url(emr()->getPluginURL('img/sp-banner-theme.jpg')); ?>" alt='ShortPixel Theme' ></a></p>
+
+	</div>
+	<!--- // Shortpixel THEME -->
 
 	<!--- WPSO -->
+	<?php /*
     <div class='shortpixel-offer site-speed'>
       <p class='img-wrapper'><img width="40" height="40" src="<?php echo emr()->getPluginURL('img/sp-logo-wink.svg'); ?>" alt='ShortPixel'></p>
       <h3><?php printf(__('GET AN ASSESSMENT FOR %s YOUR WEBSITE %s AND %s %s FIND OUT HOW TO MAKE IT FASTER %s', 'enable-media-replace'),'<br>', '<br>','<br>', '<span class="red">','</span>'); ?></h3>
 
       <p class='button-wrapper'><a href='https://wso.shortpixel.com/?utm_source=EMR' target="_blank"><?php _e('FIND OUT MORE', 'enable-media-replace') ?></a></p>
     </div>
+*/ ?>
 	<!--- // WPSO -->
+
+
 
 		<!--- ENVIRA temprary deactivated
 		<?php if (! $envira_pro_active): ?>
