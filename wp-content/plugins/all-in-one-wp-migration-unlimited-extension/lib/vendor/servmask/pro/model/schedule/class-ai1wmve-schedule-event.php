@@ -420,7 +420,7 @@ if ( ! class_exists( 'Ai1wmve_Schedule_Event' ) ) {
 			return array_map(
 				function ( $log ) {
 					$log['id']            = $log['time'];
-					$log['time']          = date_i18n( 'd.m.Y', $log['time'] );
+					$log['time']          = date_i18n( 'Y-m-d H:i:s', $log['time'] );
 					$log['status_locale'] = __( $log['status'], AI1WM_PLUGIN_NAME );
 					$log['status_class']  = strtolower( $log['status'] );
 
